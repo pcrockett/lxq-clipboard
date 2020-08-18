@@ -7,11 +7,12 @@ if lxq_is_set "${LXQ_SHORT_SUMMARY+x}"; then
 fi
 
 function show_usage() {
-    printf "Usage: lxq clipboard get [--sandbox name | --template name]\n" >&2
+    printf "Usage: lxq clipboard get [--sandbox name | --template name | --host]\n" >&2
     printf "\n" >&2
     printf "Flags:\n" >&2
     printf "  -s, --sandbox\t\tGet sandbox clipboard contents\n" >&2
     printf "  -t, --template\tGet template clipboard contents\n" >&2
+    printf "  -H, --host\t\tGet the host's clipboard\n" >&2
     printf "  -h, --help\t\tShow help message then exit\n" >&2
 }
 
@@ -30,6 +31,9 @@ function parse_commandline() {
                 ARG_HELP="true"
             ;;
             -s|--sandbox)
+                if lxq_is_set "${ARG_HOST+x}" || lxq_is_set "${ARG_TEMPLATE_NAME+x}"; then
+                    lxq_panic "Cannot use --sandbox with --template or --host."
+                fi
                 shift 1
                 if [ "${#}" -gt "0" ]; then
                     ARG_SANDBOX_NAME="${1}"
@@ -39,6 +43,9 @@ function parse_commandline() {
                 fi
             ;;
             -t|--template)
+                if lxq_is_set "${ARG_HOST+x}" || lxq_is_set "${ARG_SANDBOX_NAME+x}"; then
+                    lxq_panic "Cannot use --template with --sandbox or --host."
+                fi
                 shift 1
                 if [ "${#}" -gt "0" ]; then
                     ARG_TEMPLATE_NAME="${1}"
@@ -46,6 +53,12 @@ function parse_commandline() {
                     echo "No template name specified."
                     show_usage_and_exit
                 fi
+            ;;
+            -H|--host)
+                if lxq_is_set "${ARG_TEMPLATE_NAME+x}" || lxq_is_set "${ARG_SANDBOX_NAME+x}"; then
+                    lxq_panic "Cannot use --host with --sandbox or --template."
+                fi
+                ARG_HOST="true"
             ;;
             *)
                 echo "Unrecognized argument: ${1}"
@@ -63,14 +76,14 @@ if lxq_is_set "${ARG_HELP+x}"; then
     show_usage_and_exit
 fi
 
-if lxq_is_set "${ARG_TEMPLATE_NAME+x}" && lxq_is_set "${ARG_SANDBOX_NAME+x}"; then
-    lxq_panic "Can only specify either --sandbox or --template, but not both."
-elif lxq_is_set "${ARG_TEMPLATE_NAME+x}"; then
+if lxq_is_set "${ARG_TEMPLATE_NAME+x}"; then
     [ "$(lxq template status "${ARG_TEMPLATE_NAME}")" == "RUNNING" ] || lxq_panic "Template ${ARG_TEMPLATE_NAME} is not running."
     lxq template exec "${ARG_TEMPLATE_NAME}" -- xsel --nodetach --clipboard
 elif lxq_is_set "${ARG_SANDBOX_NAME+x}"; then
     [ "$(lxq sandbox status "${ARG_SANDBOX_NAME}")" == "RUNNING" ] || lxq_panic "Sandbox ${ARG_SANDBOX_NAME} is not running."
     lxq sandbox exec "${ARG_SANDBOX_NAME}" -- xsel --nodetach --clipboard
+elif lxq_is_set "${ARG_HOST+x}"; then
+    xsel --nodetach --clipboard
 else
-    lxq_panic "Must specify either --sandbox or --template parameter."
+    lxq_panic "Must specify --sandbox, --template, or --host."
 fi
