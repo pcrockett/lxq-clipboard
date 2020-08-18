@@ -67,10 +67,10 @@ if lxq_is_set "${ARG_TEMPLATE_NAME+x}" && lxq_is_set "${ARG_SANDBOX_NAME+x}"; th
     lxq_panic "Can only specify either --sandbox or --template, but not both."
 elif lxq_is_set "${ARG_TEMPLATE_NAME+x}"; then
     [ "$(lxq template status "${ARG_TEMPLATE_NAME}")" == "RUNNING" ] || lxq_panic "Template ${ARG_TEMPLATE_NAME} is not running."
-    lxq template exec "${ARG_TEMPLATE_NAME}" -- xsel --nodetach --clipboard < /dev/stdin
+    lxq template exec "${ARG_TEMPLATE_NAME}" -- xsel --nodetach --clipboard < /dev/stdin &
 elif lxq_is_set "${ARG_SANDBOX_NAME+x}"; then
     [ "$(lxq sandbox status "${ARG_SANDBOX_NAME}")" == "RUNNING" ] || lxq_panic "Sandbox ${ARG_SANDBOX_NAME} is not running."
-    lxq sandbox exec "${ARG_SANDBOX_NAME}" -- xsel --nodetach --clipboard < /dev/stdin
+    lxq sandbox exec "${ARG_SANDBOX_NAME}" -- xsel --nodetach --clipboard < /dev/stdin &
 else
     lxq_panic "Must specify either --sandbox or --template parameter."
 fi
